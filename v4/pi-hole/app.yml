@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2020-2021 Umbrel. https://getumbrel.com
+#
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
+# yaml-language-server: $schema=../../app-standard-v3.yml
+
+version: 3
+
+metadata:
+  category: Networking
+  name: Pi-hole
+  version: "2022.01"
+  tagline: Block ads on your entire network
+  description: >-
+    Instead of browser plugins or other software on each computer, install
+    Pi-hole® on your Citadel and your entire network is protected. Network-level
+    blocking allows you to block ads in non-traditional places such as mobile apps
+    and smart TVs, regardless of hardware or OS. Since advertisements are blocked
+    before they are downloaded, network performance is improved and will feel faster.
+    
+    
+    
+    In addition to blocking advertisements, Pi-hole® has an informative
+    Web interface that shows stats on all the domains being queried on your network.
+    Pi-hole® works fine with an existing DHCP server, but you can use Pi-hole's
+    to keep your network management in one place.
+    
+    
+    Pi-hole® and the Pi-hole® logo are registered trademarks of Pi-hole. 
+    Citadel is not sponsored, endorsed by, or associated with Pi-hole®.
+  developers:
+    Pi-hole®: https://pi-hole.net
+  dependencies: []
+  repo: https://github.com/pi-hole/pi-hole
+  support: https://discourse.pi-hole.net
+  gallery:
+  - 1.jpg
+  - 2.jpg
+  - 3.jpg
+  defaultPassword: $APP_SEED
+  torOnly: false
+
+containers:
+- image: pihole/pihole:nightly@sha256:e7a653e3dfaa03ecaeaec05bc0f200f2be574ea9834562281b38e2c6fde7e488
+  port: 80
+  requiredUdpPorts:
+    - 53
+    - 67
+  requiredPorts:
+    - 53
+  environment:
+    VIRTUAL_HOST: ${APP_DOMAIN}
+    WEBPASSWORD: $APP_SEED
+  name: server
+  data:
+  - data/dnsmasq:/etc/dnsmasq.d/
+  - data/pihole:/etc/pihole/

@@ -1,0 +1,154 @@
+# SPDX-FileCopyrightText: 2020-2021 Umbrel. https://getumbrel.com
+#
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
+# yaml-language-server: $schema=../../app-standard-v4.yml
+
+citadel_version: 4
+metadata:
+  name: Samourai Server
+  version: 1.15.0
+  category: Wallet Servers
+  tagline: Your private backing server for Samourai Wallet.
+  developers:
+    Samourai: https://samouraiwallet.com
+  permissions:
+  - electrum
+  - bitcoind
+  repo:
+    Public: https://github.com/runcitadel/samourai-dojo
+  support: https://t.me/SamouraiWallet
+  gallery:
+  - 1.jpg
+  - 2.jpg
+  - 3.jpg
+  defaultPassword: null
+  torOnly: false
+  description: |-
+    Samourai Server is a Citadel app that runs Samourai Dojo and Whirlpool backing servers, and provides you easy step-by-step instructions to connect your Samourai Wallet to them. Samourai Wallet is unrivaled in transaction privacy, but its default configuration is still subject to network level privacy loss.
+
+    By default, Samourai Wallet will connect to its centrally controlled Dojo hosted in Iceland. By hosting your own Samourai Server, you can bypass its servers completely when using Samourai Wallet or Sentinel, and gain total financial sovereignty without any complexity.
+
+    Bundles Whirlpool CLI v0.10.13.
+services:
+  node:
+    image: ghcr.io/runcitadel/samourai-dojo:develop@sha256:458369967228c88af2710e37b6bc5b85ee44fa3871889eede7211846e9aaa2ae
+    user: 1000:1000
+    depends_on:
+    - db
+    init: true
+    command: /home/node/app/wait-for-it.sh ${APP_SAMOURAI_SERVER_DB_IP}:3306 --timeout=720 --strict -- /home/node/app/restart.sh
+    environment:
+      NET_DOJO_TOR_IPV4: $TOR_PROXY_IP
+      MYSQL_PASSWORD: password
+      NODE_TXS_SCHED_MAX_DELTA_HEIGHT: 18
+      NET_DOJO_TOR_PORT: $TOR_PROXY_PORT
+      NODE_JWT_REFRESH_EXPIRES: 7200
+      NODE_GAP_INTERNAL: 100
+      DOJO_NODEJS_VERSION_TAG: 1.12.1
+      NODE_API_KEY: $APP_SEED_1
+      INDEXER_RPC_PORT: $ELECTRUM_PORT
+      INDEXER_PROTOCOL: tcp
+      MYSQL_USER: samourai
+      NODE_GAP_EXTERNAL: 100
+      BITCOIND_ZMQ_BLK_HASH: $BITCOIN_ZMQ_HASHBLOCK_PORT
+      EXPLORER_INSTALL: off
+      NODE_ADDR_DERIVATION_MAX_CHILD: 2
+      COMMON_BTC_NETWORK: $BITCOIN_NETWORK
+      NODE_JWT_ACCESS_EXPIRES: 900
+      BITCOIND_IP: $BITCOIN_IP
+      INDEXER_BATCH_SUPPORT: inactive
+      NET_DOJO_MYSQL_IPV4: $APP_SAMOURAI_SERVER_DB_IP
+      NODE_ADDR_DERIVATION_MIN_CHILD: 2
+      BITCOIND_RPC_PASSWORD: $BITCOIN_RPC_PASS
+      NODE_TRACKER_UNCONF_TXS_PERIOD: 300000
+      NODE_TXS_SCHED_MAX_ENTRIES: 10
+      NODE_ADDR_DERIVATION_THRESHOLD: 10
+      MYSQL_DATABASE: samourai-main
+      NODE_JWT_SECRET: $APP_SEED_3
+      NODE_ADMIN_KEY: $APP_SEED_2
+      INDEXER_IP: $ELECTRUM_IP
+      BITCOIND_ZMQ_RAWTXS: $BITCOIN_ZMQ_RAWTX_PORT
+      NODE_TRACKER_MEMPOOL_PERIOD: 10000
+      NODE_PREFIX_SUPPORT: support
+      NODE_PREFIX_STATUS: status
+      BITCOIND_RPC_USER: $BITCOIN_RPC_USER
+      NODE_FEE_TYPE: ECONOMICAL
+      NODE_ADDR_FILTER_THRESHOLD: 1000
+      NODE_PREFIX_STATUS_PUSHTX: status
+      NODE_ACTIVE_INDEXER: local_indexer
+      BITCOIND_RPC_PORT: $BITCOIN_RPC_PORT
+    port_priority: Recommended
+    mounts: {}
+  main:
+    image: nginx:1.21.3-alpine@sha256:1ff1364a1c4332341fc0a854820f1d50e90e11bb0b93eb53b47dc5e10c680116
+    depends_on:
+    - node
+    init: true
+    command: /bin/sh -c "envsubst < /var/www/connect/js/conf.template.js > /var/www/connect/js/conf.js && /wait-for node:8080 --timeout=720 -- nginx"
+    environment:
+      WHIRLPOOL_HIDDEN_SERVICE: $APP_HIDDEN_SERVICE_WHIRLPOOL
+      NODE_PREFIX_SUPPORT: support
+      WHIRLPOOL_API_KEY: $APP_SEED_4
+      DOJO_LOCAL_PORT: 3009
+      COMMON_BTC_NETWORK: $BITCOIN_NETWORK
+      DOJO_HIDDEN_SERVICE: $APP_HIDDEN_SERVICE_DOJO
+      NODE_ADMIN_KEY: $APP_SEED_2
+    port: 8081
+    required_ports:
+      tcp:
+        3009: 3009
+    mounts:
+      data:
+        nginx/${BITCOIN_NETWORK}.conf: /etc/nginx/sites-enabled/dojo.conf
+        nginx/connect.conf: /etc/nginx/sites-enabled/connect.conf
+        nginx/connect: /var/www/connect
+        nginx/nginx.conf: /etc/nginx/nginx.conf
+        nginx/wait-for: /wait-for
+    hidden_services:
+      dojo:
+        80: 80
+  whirlpool:
+    image: ghcr.io/runcitadel/whirlpool-cli:main@sha256:83d14099c1c3f9fbd3471eee75539d81dd0a48cfdf29e1151ace5dbfa9438b7d
+    user: 1000:1000
+    init: true
+    command:
+    - --listen
+    - --cli.apiKey=$APP_SEED_4
+    - --cli.api.http-enable=true
+    - --cli.api.http-port=8898
+    - --cli.tor=true
+    - --cli.torConfig.coordinator.enabled=true
+    - --cli.torConfig.coordinator.onion=true
+    - --cli.torConfig.backend.enabled=false
+    - --cli.torConfig.backend.onion=false
+    - --cli.mix.liquidityClient=true
+    - --cli.mix.clientsPerPool=1
+    - --resync
+    environment:
+      WHIRLPOOL_DOJO: on
+      WHIRLPOOL_BITCOIN_NETWORK: $BITCOIN_NETWORK
+      WHIRLPOOL_DOJO_IP: $APP_SAMOURAI_SERVER_MAIN_IP
+    port_priority: Recommended
+    mounts:
+      data:
+        whirlpool: /home/whirlpool/.whirlpool-cli
+    hidden_services:
+      80: 8898
+  db:
+    image: mariadb:10.6.4@sha256:4bbee12b1adf299211f844ebbe89563675c46965470dcfa40f5278d63c56d030
+    user: 1000:1000
+    stop_grace_period: 5m
+    init: true
+    environment:
+      MYSQL_DATABASE: samourai-main
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_USER: samourai
+    port_priority: Recommended
+    mounts:
+      data:
+        mysql/db-scripts: /docker-entrypoint-initdb.d
+        mysql/mysql-dojo.cnf: /etc/mysql/conf.d/mysql-dojo.cnf
+        mysql/update-db.sh: /update-db.sh
+        mysql/data: /var/lib/mysql
