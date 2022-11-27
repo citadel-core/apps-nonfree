@@ -1,0 +1,11 @@
+store_version: 1
+
+id: citadel
+name: Citadel app store
+tagline: The official app store by the Citadel team
+developers: The Citadel developers
+license: Proprietary
+icon: https://icons.runcitadel.space/app-stores/main.svg
+
+content:
+  v0.4.0: v4
