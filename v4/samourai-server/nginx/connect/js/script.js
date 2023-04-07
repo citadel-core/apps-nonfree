@@ -33,6 +33,7 @@ fetch(`http://${dojoHost}/${dojoBaseRoute}/auth/login`, {
     .then(response => response.json())
     .then(pairingInfo => {
         pairingInfo.pairing.url = `http://${dojoHiddenService}/${dojoBaseRoute}`;
+        pairingInfo.pairing.version = "1.4.5";
 
         const qrcodeSvg = new QRCode({
           content: JSON.stringify(pairingInfo),
