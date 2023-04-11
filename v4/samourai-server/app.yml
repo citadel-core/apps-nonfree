@@ -32,7 +32,7 @@ metadata:
     Bundles Whirlpool CLI v0.10.13.
 services:
   node:
-    image: ghcr.io/runcitadel/samourai-dojo:develop@sha256:458369967228c88af2710e37b6bc5b85ee44fa3871889eede7211846e9aaa2ae
+    image: harbor.nirvati.org/citadel/dojo:latest@sha256:5741ecab427ac5d6bdb254836a2f9e1307e4e7d24b8e9cfae11dbce7a02c24a0
     user: 1000:1000
     depends_on:
     - db
